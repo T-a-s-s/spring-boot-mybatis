@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CorretoresMapper">
+
+	<select id="listCorretoresRelatorio"
+		parameterType="java.util.Date"
+		resultType="br.com.tokiomarine.relatorio.dto.CorretorDTO">
+         <![CDATA[
+        select distinct a.cd_corretor codCorretor,
+				   nvl(PR_SERVICES.Retorna_Corretor@dbl_plattoacx01(d.cd_corretor_acsel,nvl(g.dt_endosso,g.dt_emissao_apolice), null, 3, 2 ) ,c.nm_razao_social) nomeCorretor,
+				   g.cd_funcionario codFuncionario
+			from   apolice_documento_digital     a,
+			       apolice_documento_digital_arq b,
+			       corretor                      c,
+			       corretor_divisao              d,
+			       documento_impressao           f,
+			       v_histo_apolice               g
+			where  b.cd_sequencia = a.cd_sequencia and
+			       a.id_processado = 'S' and
+			       a.id_extraido = 'S' and
+			       b.id_processado = a.id_processado and
+			       b.id_url_ftp = 'S' and
+			       trunc(a.dt_emissao) = trunc(#{dataEmissao, jdbcType=DATE}) and
+			       d.cd_corretor = a.cd_corretor and
+			       d.cd_cgc_cpf_corretor = c.cd_cgc_cpf_corretor and
+			       d.cd_estabelecimento_corretor = c.cd_estabelecimento_corretor and
+			       d.cd_tipo_corretor = c.cd_tipo_corretor and
+			       f.cd_documento = b.cd_documento and
+			       a.cd_local = g.cd_local and
+			       a.cd_ramo = g.cd_ramo and
+			       a.cd_apolice = g.cd_apolice and
+			       nvl(a.cd_endosso, 0) = nvl(g.cd_endosso, 0)
+			order  by 1
+		]]>
+	</select>
+	
+	<select id="listDadosEmissoes"
+		parameterType="map" 
+		resultType="br.com.tokiomarine.relatorio.dto.DadosEmissaoDTO">
+         <![CDATA[
+         	select a.cd_corretor codCorretor,
+			       nvl(PR_SERVICES.Retorna_Corretor@dbl_plattoacx01(d.cd_corretor_acsel,nvl(g.dt_endosso,g.dt_emissao_apolice), null, 3, 2 ) ,c.nm_razao_social) nomeCorretor,
+			       g.cd_pedido_cotacao codPedidoCotacao,
+			       a.cd_local codLocal,
+			       a.cd_ramo codRamo,
+			       a.cd_apolice codApolice,
+			       a.cd_endosso codEndosso,
+			       prod2200_120.fnc_formata_apolice(a.cd_local, a.cd_ramo, a.cd_apolice, a.cd_endosso) dadosApolice,
+			       prod2200_120.fnc_formata_endosso(a.cd_local, a.cd_ramo, a.cd_apolice, a.cd_endosso) dadosEndosso,
+			       a.dt_emissao dataEmissao,
+			       h.nm_segurado nomeSegurado,
+			       a.dt_envio_email dataEnvioEmail,
+			       b.cd_documento codDocumento,
+			       f.ds_documento desricaoDocumento,
+			       b.ds_url_arquivo urlDocstore
+			from   apolice_documento_digital     a,
+			       apolice_documento_digital_arq b,
+			       corretor                      c,
+			       corretor_divisao              d,
+			       documento_impressao           f,
+			       v_histo_apolice               g,
+			       segurado                      h,
+			       corretor_documento_digital    i
+			where  b.cd_sequencia = a.cd_sequencia and
+			       a.id_processado = 'S' and
+			       a.id_extraido = 'S' and
+			       b.id_processado = a.id_processado and
+			       b.id_url_ftp = 'S' and
+			       trunc(a.dt_emissao) = trunc(#{dataEmissao , jdbcType=DATE}) and
+			       d.cd_corretor = a.cd_corretor and
+			       d.cd_cgc_cpf_corretor = c.cd_cgc_cpf_corretor and
+			       d.cd_estabelecimento_corretor = c.cd_estabelecimento_corretor and
+			       d.cd_tipo_corretor = c.cd_tipo_corretor and
+			       f.cd_documento = b.cd_documento and
+			       a.cd_local = g.cd_local and
+			       a.cd_ramo = g.cd_ramo and
+			       a.cd_apolice = g.cd_apolice and
+			       nvl(a.cd_endosso, 0) = nvl(g.cd_endosso, 0) and
+			       g.cd_segurado = h.cd_segurado and
+			       g.cd_corretor = i.cd_corretor and
+			       a.cd_corretor = #{codCorretor}
+			order  by 1,
+				  2,
+				  3,
+				  4,
+				  5
+		]]>
+	</select>
+	
+	<select id="getUrlServidorBU"
+		resultType="string">
+         <![CDATA[
+		select vl_char from politicas_parametro where nm_politica_parametro = 'ID_SERVIDOR_BU'
+		]]>
+	</select>
+	
+	<select id="getFeriado"
+		resultType="string">
+         <![CDATA[
+		select ds_feriado from calendario_feriado where dt_feriado = trunc(#{dataReferencia , jdbcType=DATE})
+		]]>
+	</select>
+	
+	<select id="getEmailsFuncionarios"
+		resultType="string">
+         <![CDATA[
+		select ds_email id_email
+		from   email_process_docto_digitais
+		union all
+		select nvl(id_email, 'ti_emissaoplat@tokiomarine.com.br') id_email
+		from   funcionario
+		where  cd_funcionario = #{codFuncionario}
+		]]>
+	</select>
+	
+	<select id="getServidorDigital"
+		resultType="string">
+         <![CDATA[
+		select vl_char from politicas_parametro where nm_politica_parametro = 'ID_SERVIDOR_DIGITAL_NOVO'
+		]]>
+	</select>
+</mapper>
